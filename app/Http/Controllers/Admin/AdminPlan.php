@@ -1,0 +1,215 @@
+<?php	
+		
+	namespace App\Http\Controllers\Admin;	
+		
+	use Illuminate\Http\Request;	
+	use App\Http\Controllers\Controller;	
+    use App\Models\Common;
+	use App\Models\User;
+    use App\Models\Settings;
+    use App\Models\Seller;	
+	use App\Models\City;
+	use App\Models\Plan;
+	use App\Models\ActivityLog;
+	use Auth;
+	use App\Http\Requests\Plan\Addform;
+		
+	class AdminPlan extends Controller	
+	{		
+        protected $data = array();
+        protected $page_details =array(
+            'page_name'=> 'Plan',
+            'page_auth'=> 'admin',
+        );		
+		/**  			
+			* Contructor to aunthendicate user			
+		*/		
+		public function __construct(){			
+			$this->middleware('admin');			
+		}		
+				
+		/**			
+			* Display a listing of the resource.			
+			*			
+			* @return \Illuminate\Http\Response			
+		*/		
+				
+		public function index(Request $request){			
+
+            $this->data['senddata'] = Plan::paginate();
+            $this->data['message'] = 'No Plan Added';
+            $this->data['add'] = 'plan.create';
+			$this->data['edit'] = url('admin/plan'); 
+            $this->data['page_details'] = $this->page_details;
+            $this->data['route'] = array('page_details.index');
+            return view('admin.plan.manage', $this->data);  
+		}		
+
+
+		public function filter(Request $request){
+
+            $this->data['senddata'] = Plan::where('plan_status',$request->status)->get();
+            $this->data['message'] = 'No Plan Added';
+            $this->data['add'] = 'plan.create';
+			$this->data['edit'] = url('admin/plan'); 
+            $this->data['page_details'] = $this->page_details;
+            $this->data['route'] = array('page_details.index');
+            return view('admin.plan.manage_ajax', $this->data); 
+		}	
+				
+		/**			
+			* Show the form for creating a new resource.			
+			*			
+			* @return \Illuminate\Http\Response			
+		*/		
+		public function create()		
+		{			
+			$this->data['senddata'] = new Plan;
+			$this->data['page_details'] = $this->page_details;
+            $this->data['route'] = array('plan.store');
+			$this->data['method'] = 'POST';
+			return view('admin.plan.addedit', $this->data); 		
+		}		
+				
+		/**			
+			* Store a newly created resource in storage.			
+			*			
+			* @param  \Illuminate\Http\Request  $request			
+			* @return \Illuminate\Http\Response			
+		*/		
+		public function store(Addform $request)		
+		{			
+
+			
+            $insert_array = $request->except(['_token']);
+			$plan_offer=implode(",",$request->plan_offer);
+			
+			$insert_array['created_by']=auth()->guard('admin')->user()->id;
+			$insert_array['updated_by']=auth()->guard('admin')->user()->id;
+			$insert_array['plan_offer']=$plan_offer;
+			try{
+				$create_array = new Plan;
+				$create_array = $create_array->fill($insert_array);
+				$create_array->save();
+
+				$activity = new ActivityLog;
+				$activity->user_id = Auth::guard('admin')->user()->id;
+				$activity->user_type = 'Admin';
+				$activity->module = 'Plan';
+				$activity->activity = 'Plan Added';
+				$activity->created_at = now();
+		        $activity->updated_at = now();
+				$activity->save();
+
+				return redirect('admin/plan')->with('success', 'Plan Added Successfully');
+				
+			}
+			catch(\Illuminate\Database\QueryException $e){ 
+				return redirect()->back()->withInput()->with('failure', $e->getMessage());
+			}
+			catch (Exception $e){
+				report($e);
+				return redirect()->back()->withInput()->with('failure', $e->getMessage());
+			}
+		}		
+				
+		/**			
+			* Display the specified resource.			
+			*			
+			* @param  int  $id			
+			* @return \Illuminate\Http\Response			
+		*/		
+		public function show($id)		
+		{			
+			//			
+		}		
+				
+		/**			
+			* Show the form for editing the specified resource.			
+			*			
+			* @param  int  $id			
+			* @return \Illuminate\Http\Response			
+		*/		
+		public function edit($id)		
+		{			
+			$this->data['senddata'] =  Plan::find($id);	
+			$this->data['message'] = 'Update Plan';        
+            $this->data['method'] = 'PUT';
+			$this->data['route'] = array('plan.update',$id);
+			$this->data['page_details'] = $this->page_details;
+			return view('admin.plan.addedit',$this->data);
+		}		
+				
+		/**			
+			* Update the specified resource in storage.			
+			*			
+			* @param  \Illuminate\Http\Request  $request			
+			* @param  int  $id			
+			* @return \Illuminate\Http\Response			
+		*/		
+		public function update(Request $request, $id)		
+		{
+			$rules=array(
+				'plan_name'=>'required',
+                'plan_duration'=>'required',
+                'plan_amount'=>'required',
+                'plan_status'=>'required',
+			);
+			$messages = array(
+				'plan_name.required' => 'Enter Plan Name',
+				'plan_duration.required' => 'Enter Plan Duration',        
+				'plan_amount.required' => 'Enter Plan Amount', 
+				'plan_status.required' => 'Choose Status', 
+			);
+
+            $user_data = $request->except('_token','_method');
+			$plan_offer=implode(",",$request->plan_offer);
+			$user_data['plan_offer']=$plan_offer;
+			try{
+				$_update_record = Plan::find($id);
+				$_update_record->fill($user_data);
+                $_update_record->save();
+
+                $activity = new ActivityLog;
+				$activity->user_id = Auth::guard('admin')->user()->id;
+				$activity->user_type = 'Admin';
+				$activity->module = 'Plan';
+				$activity->activity = 'Plan Updated';
+				$activity->created_at = now();
+		        $activity->updated_at = now();
+				$activity->save();
+
+				return redirect('admin/plan')->with('success', 'Plan Updated Successfully');
+			}
+			catch(\Illuminate\Database\QueryException $e){ 
+				return redirect()->back()->withInput()->with('failure', $e->getMessage());
+			}
+			catch (Exception $e){
+				report($e);
+				return redirect()->back()->withInput()->with('failure', $e->getMessage());
+			}
+
+		}		
+				
+		/**			
+			* Remove the specified resource from storage.			
+			*			
+			* @param  int  $id			
+			* @return \Illuminate\Http\Response			
+		*/		
+		public function deletePlan(Request $request){
+			$user = Plan::find($request->delete_id);
+			$user->delete();
+
+			$activity = new ActivityLog;
+			$activity->user_id = Auth::guard('admin')->user()->id;
+			$activity->user_type = 'Admin';
+			$activity->module = 'Plan';
+			$activity->activity = 'Plan Deleted';
+			$activity->created_at = now();
+		    $activity->updated_at = now();
+			$activity->save();
+
+			return redirect()->back()->with('success','Plan Deleted Successfully');	
+		}		
+	}	

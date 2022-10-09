@@ -1,0 +1,63 @@
+@extends('layouts.admin')
+@section('title','Orders History') 
+@section('content')
+
+<div class="content-wrapper">
+   <div class="page-header">
+      <h3 class="page-title"> Orders</h3>
+      <nav aria-label="breadcrumb">
+         <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="#">SuperAdmin</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Orders History</li>
+         </ol>
+      </nav>
+   </div>
+   <div class="row">
+      <div class="col-lg-12 grid-margin stretch-card">
+         <div class="card">
+            <div class="card-body table-responsive">
+              
+               <table class="table table-striped" id="orders_history">
+                  <thead>
+                     <tr>
+                        <th>S.No</th>
+                        <th>Total Customer Uses</th>
+                        <th>Coupon Order Value</th>
+                        <th>Coupon Redeem</th>
+                        <th>Admin Pay Amount</th>
+                     </tr>
+                  </thead>
+                  <tbody>
+
+                  </tbody>
+               </table>
+            </div>
+         </div>
+      </div>
+   </div>
+</div>
+
+
+@endsection
+
+
+<script src="{{asset('public/js/jquery.min.js')}}"></script>
+<script src="{{asset('public/js/jquery.dataTables.min.js')}}"></script>
+<script src="{{asset('public/js/dataTables.bootstrap4.min.js')}}"></script>
+
+<script type="text/javascript">
+
+   $(function () {
+    $.noConflict();
+        $('#orders_history').DataTable({
+            "pageLength": 10,
+            "bSort": true,
+            "bPaginate": true,
+            "bLengthChange": false,
+            "bFilter": true,
+            "bInfo": false,
+            "bAutoWidth": true,
+        });        
+    });
+
+</script>
